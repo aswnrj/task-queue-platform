@@ -7,15 +7,17 @@ import (
 
 	"github.com/aswnrj/task-queue-platform/internal/models"
 	"github.com/aswnrj/task-queue-platform/internal/store"
+	"github.com/aswnrj/task-queue-platform/internal/worker"
 	"github.com/google/uuid"
 )
 
 type TaskHandler struct {
 	store store.TaskStore
+	pool  *worker.Pool
 }
 
-func NewTaskHandler(s store.TaskStore) *TaskHandler {
-	return &TaskHandler{store: s}
+func NewTaskHandler(s store.TaskStore, p *worker.Pool) *TaskHandler {
+	return &TaskHandler{store: s, pool: p}
 }
 
 type CreateTaskRequest struct {
@@ -45,6 +47,7 @@ func (h *TaskHandler) Create(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "failed to create task"}`, http.StatusInternalServerError)
 		return
 	}
+	h.pool.Submit(task)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(task)
